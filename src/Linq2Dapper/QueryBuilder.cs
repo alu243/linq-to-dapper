@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections;
+using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Linq.Expressions;
@@ -290,7 +291,7 @@ namespace Dapper.Contrib.Linq2Dapper
             // IN (...)
             object ev;
 
-            if (node.Method.DeclaringType == typeof (List<string>))
+            if (node.Method.DeclaringType == typeof (List<string>) || node.Method.DeclaringType == typeof (List<int>))
             {
                 if (
                     !QueryHelper.IsSpecificMemberExpression(node.Arguments[0], typeof (TData),
@@ -321,12 +322,12 @@ namespace Dapper.Contrib.Linq2Dapper
             _writer.In();
 
             // Add each string in the collection to the list of locations to obtain data about. 
-            var queryStrings = (IList<object>)ev;
-            var count = queryStrings.Count();
+            var queryStrings = (IList)ev ;
+            var count = queryStrings.Count;
             _writer.OpenBrace();
             for (var i = 0; i < count; i++)
             {
-                _writer.Parameter(queryStrings.ElementAt(i));
+                _writer.Parameter(queryStrings[i]);
 
                 if (i + 1 < count)
                     _writer.Delimiter();

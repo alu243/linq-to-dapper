@@ -24,9 +24,17 @@ namespace Dapper.Contrib.Linq2Dapper.Helpers
         internal static bool IsSpecificMemberExpression(Expression exp, Type declaringType, Dictionary<string, string> propertyList)
         {
             if (propertyList == null) return false;
-            return ((exp is MemberExpression) &&
-                    (((MemberExpression)exp).Member.DeclaringType == declaringType) &&
-                    propertyList[(((MemberExpression)exp).Member.Name)] != null);
+            if (false == (exp is MemberExpression)) return false;
+            var type = declaringType;
+            while (type != null && type.Name != "Object")
+            {
+                if (((MemberExpression)exp).Member.DeclaringType == type)
+                {
+                    return propertyList[(((MemberExpression)exp).Member.Name)] != null;
+                }
+                type = type.BaseType;
+            }
+            return false;
         }
 
         internal static object GetValueFromEqualsExpression(BinaryExpression be, Type memberDeclaringType)
@@ -122,7 +130,25 @@ namespace Dapper.Contrib.Linq2Dapper.Helpers
 
         internal static object GetValueFromExpression(Expression expression)
         {
-            return Expression.Lambda(expression).Compile().DynamicInvoke();
+            var value = Expression.Lambda(expression).Compile().DynamicInvoke();
+            var type = value.GetType();
+            if (type.IsValueType || type.IsGenericType || type.IsArray || value.GetType().Name == "String")
+            {
+                return value;
+            }
+            else 
+            {
+                var fields = value.GetType().GetFields();
+                if (fields.Length == 2)
+                {
+                    var newValue = fields[0].GetValue(value);
+                    return newValue;
+                }
+                else
+                {
+                    return value;
+                }
+            }
         }
 
         internal static string GetOperator(string methodName)
